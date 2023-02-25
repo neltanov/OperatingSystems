@@ -2,7 +2,7 @@
 
 msg:
     .ascii "Hello, world!\n"
-    len = . - msg
+    len =  . - msg
 
 .text
     .global _start
@@ -10,7 +10,7 @@ msg:
 _start:
     movq $1, %rax
     movq $1, %rdi
-    movq $msg, %rsi
+    movq $[msg+4], %rsi
     movq $len, %rdx
     syscall
 
