@@ -59,7 +59,6 @@ void reverse_filename(char *file_path) {
 }
 
 void copy_reversed_regular_files(char *src_dir, char *dst_dir) {
-    char buffer[BUF_SIZE];
     int in_fd, out_fd, rd_count, wt_count;
     DIR *dir;
     // Открываем директорию и обходим все файлы в этой директории.
@@ -71,8 +70,7 @@ void copy_reversed_regular_files(char *src_dir, char *dst_dir) {
     struct stat st;
     char *src_filepath = (char *) malloc(strlen(src_dir) * sizeof(char));
     char *dst_filepath = (char *) malloc(strlen(dst_dir) * sizeof(char));
-    entry = readdir(dir);
-    while (entry) {
+    while ((entry = readdir(dir))) {
         // Ссылки на родительскую и текущую директорию не копируем.
 
         if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) {
@@ -90,6 +88,7 @@ void copy_reversed_regular_files(char *src_dir, char *dst_dir) {
         for (int i = 0; i < strlen(src_dir); i++) {
             src_filepath[i] = src_dir[i];
         }
+        src_filepath[strlen(src_dir)] = '\0';
 
         // Формирование пути к файлу, из которого копируем данные.
         strcat(src_filepath, "/");
@@ -98,11 +97,10 @@ void copy_reversed_regular_files(char *src_dir, char *dst_dir) {
         if (in_fd < 0) {
             exit(2);
         }
-        free(src_filepath);
-
         for (int i = 0; i < strlen(dst_dir); i++) {
             dst_filepath[i] = dst_dir[i];
         }
+        dst_filepath[strlen(dst_dir)] = '\0';
 
         reverse_string(entry->d_name); // поменять на reverse_filename
 
@@ -114,6 +112,8 @@ void copy_reversed_regular_files(char *src_dir, char *dst_dir) {
         if (out_fd < 0) {
             exit(3);
         }
+
+        char buffer[BUF_SIZE];
 
         while (TRUE) {
             rd_count = (int) read(in_fd, buffer, BUF_SIZE);
@@ -131,13 +131,6 @@ void copy_reversed_regular_files(char *src_dir, char *dst_dir) {
 
         close(in_fd);
         close(out_fd);
-
-        if (rd_count == 0) {
-            exit(0);
-        } else {
-            exit(5);
-        }
-        entry = readdir(dir);
     }
     free(src_filepath);
     free(dst_filepath);
