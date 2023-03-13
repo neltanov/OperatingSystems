@@ -3,5 +3,4 @@ project(lab3 C)
 
 set(CMAKE_C_STANDARD 11)
 
-add_executable(lab3
-        copyfile.c)
+add_executable(lab3 copyfile.c)
