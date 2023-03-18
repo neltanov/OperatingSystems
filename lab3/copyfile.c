@@ -27,11 +27,11 @@ void create_reversed_directory(char *str) {
         str = pch;
         pch = strtok(NULL, "/");
     }
-    // Переворачиваем директорию.
+    /* Переворачиваем директорию. */
     reverse_string(str);
 
     DIR *dir;
-    // Создаем директорию с перевернутым именем.
+    /* Создаем директорию с перевернутым именем. */
     if (!(dir = opendir(str))) {
         mkdir(str, OUTPUT_MODE);
         printf("Directory created successfully.\n");
@@ -61,53 +61,49 @@ void reverse_filename(char *file_path) {
 void copy_reversed_regular_files(char *src_dir, char *dst_dir) {
     int in_fd, out_fd, rd_count, wt_count;
     DIR *dir;
-    // Открываем директорию и обходим все файлы в этой директории.
+    /* Открываем директорию. */
     if (!(dir = opendir(src_dir))) {
         printf("%s: This directory doesn't exist!\n", src_dir);
         return;
     }
     struct dirent *entry;
     struct stat st;
-    char *src_filepath = (char *) malloc(strlen(src_dir) * sizeof(char));
-    char *dst_filepath = (char *) malloc(strlen(dst_dir) * sizeof(char));
-    while ((entry = readdir(dir))) {
-        // Ссылки на родительскую и текущую директорию не копируем.
+    char *src_filepath = malloc((strlen(src_dir) + 1) * sizeof(char));
+    char *dst_filepath = malloc((strlen(dst_dir) + 1) * sizeof(char));
 
+    /* Обходим все файлы в этой директории. */
+    while ((entry = readdir(dir))) {
+        /* Ссылки на родительскую и текущую директорию не копируем. */
         if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) {
             continue;
         }
-        // Директории не копируем.
+        /* Директории не копируем. */
         stat(entry->d_name, &st);
         if (S_ISDIR(st.st_mode)) {
             continue;
         }
 
-        printf("%s\n", entry->d_name);
-
-
-        for (int i = 0; i < strlen(src_dir); i++) {
-            src_filepath[i] = src_dir[i];
-        }
+        /* Формируем путь к файлу, из которого копируем данные. */
+        strcpy(src_filepath, src_dir);
         src_filepath[strlen(src_dir)] = '\0';
-
-        // Формирование пути к файлу, из которого копируем данные.
         strcat(src_filepath, "/");
         strcat(src_filepath, entry->d_name);
+
+        /* Переворачиваем имя исходного файла. */
+        reverse_string(entry->d_name); // поменять на reverse_filename
+
+        /* Формируем путь к файлу, в который копируем данные. */
+        strcpy(dst_filepath, dst_dir);
+        dst_filepath[strlen(dst_dir)] = '\0';
+        strcat(dst_filepath, "/");
+        strcat(dst_filepath, entry->d_name);
+
+        /* Открываем файл с именем пути src_filepath. */
         in_fd = open(src_filepath, O_RDONLY);
         if (in_fd < 0) {
             exit(2);
         }
-        for (int i = 0; i < strlen(dst_dir); i++) {
-            dst_filepath[i] = dst_dir[i];
-        }
-        dst_filepath[strlen(dst_dir)] = '\0';
-
-        reverse_string(entry->d_name); // поменять на reverse_filename
-
-        // Формирование пути к файлу, в который копируем данные.
-        strcat(dst_filepath, "/");
-        strcat(dst_filepath, entry->d_name);
-
+        /* Создаем файл по имени пути dst_filepath. */
         out_fd = creat(dst_filepath, OUTPUT_MODE);
         if (out_fd < 0) {
             exit(3);
@@ -142,12 +138,10 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    char *dir_name = (char *) malloc(strlen(argv[1]) * sizeof(char));
-    for (int i = 0; i < strlen(argv[1]); i++) {
-        dir_name[i] = argv[1][i];
-    }
-    // Создание каталога с именем заданного каталога, прочитанного наоборот.
-    // После выполнения функции в argv[1] находится путь созданной директории.
+    char *dir_name = malloc((strlen(argv[1]) + 1) * sizeof(char));
+    strcpy(dir_name, argv[1]);
+    /* Создание каталога с именем заданного каталога, прочитанного наоборот.
+     После выполнения функции в argv[1] находится путь созданной директории.*/
     create_reversed_directory(argv[1]);
 
     copy_reversed_regular_files(dir_name, argv[1]);
