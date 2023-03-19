@@ -27,16 +27,12 @@ void create_reversed_directory(char *str) {
         str = pch;
         pch = strtok(NULL, "/");
     }
-    /* Переворачиваем директорию. */
     reverse_string(str);
-
     DIR *dir;
     /* Создаем директорию с перевернутым именем. */
     if (!(dir = opendir(str))) {
         mkdir(str, OUTPUT_MODE);
-        printf("Directory created successfully.\n");
     } else {
-        printf("Directory is already exist. Current directory will be overwritten.\n");
         mkdir(str, OUTPUT_MODE);
         closedir(dir);
     }
@@ -58,27 +54,30 @@ void reverse_filename(char *file_path) {
 //    file_path = new_path;
 }
 
-void copy_reversed_regular_files(char *src_dir, char *dst_dir) {
-    int in_fd, out_fd, rd_count, wt_count;
+void copy_reversed_regular_files(char *src_dir) {
     DIR *dir;
-    /* Открываем директорию. */
     if (!(dir = opendir(src_dir))) {
-        printf("%s: This directory doesn't exist!\n", src_dir);
-        return;
+        printf("%s: No such file or directory", src_dir);
+        exit(2);
     }
+
+    char *dst_dir = malloc((strlen(src_dir) + 1) * sizeof(char));
+    strcpy(dst_dir, src_dir);
+    create_reversed_directory(dst_dir);
+
     struct dirent *entry;
     struct stat st;
     char *src_filepath = malloc((strlen(src_dir) + 1) * sizeof(char));
     char *dst_filepath = malloc((strlen(dst_dir) + 1) * sizeof(char));
-
+    int rd_count, wt_count, in_fd, out_fd;
     /* Обходим все файлы в этой директории. */
     while ((entry = readdir(dir))) {
+        stat(entry->d_name, &st);
         /* Ссылки на родительскую и текущую директорию не копируем. */
         if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) {
             continue;
         }
         /* Директории не копируем. */
-        stat(entry->d_name, &st);
         if (S_ISDIR(st.st_mode)) {
             continue;
         }
@@ -86,6 +85,8 @@ void copy_reversed_regular_files(char *src_dir, char *dst_dir) {
         /* Формируем путь к файлу, из которого копируем данные. */
         strcpy(src_filepath, src_dir);
         src_filepath[strlen(src_dir)] = '\0';
+        src_filepath = realloc(src_filepath,
+                               (strlen(src_dir) + strlen("/") + strlen(entry->d_name) + 1) * sizeof(char));
         strcat(src_filepath, "/");
         strcat(src_filepath, entry->d_name);
 
@@ -95,39 +96,45 @@ void copy_reversed_regular_files(char *src_dir, char *dst_dir) {
         /* Формируем путь к файлу, в который копируем данные. */
         strcpy(dst_filepath, dst_dir);
         dst_filepath[strlen(dst_dir)] = '\0';
+        dst_filepath = realloc(dst_filepath,
+                               (strlen(dst_dir) + strlen("/") + strlen(entry->d_name) + 1) * sizeof(char));
         strcat(dst_filepath, "/");
         strcat(dst_filepath, entry->d_name);
 
         /* Открываем файл с именем пути src_filepath. */
         in_fd = open(src_filepath, O_RDONLY);
         if (in_fd < 0) {
-            exit(2);
+            printf("%s: This file cannot be opened", src_filepath);
+            exit(3);
         }
         /* Создаем файл по имени пути dst_filepath. */
         out_fd = creat(dst_filepath, OUTPUT_MODE);
         if (out_fd < 0) {
-            exit(3);
+            printf("%s: This file cannot be created", src_filepath);
+            exit(4);
         }
 
-        char buffer[BUF_SIZE];
+//        char buffer[BUF_SIZE];
+//
+//        while (TRUE) {
+//            rd_count = (int) read(in_fd, buffer, BUF_SIZE);
+//            if (rd_count <= 0) {
+//                break;
+//            }
+//
+//            reverse_string(buffer);
+//
+//            wt_count = (int) write(out_fd, buffer, rd_count);
+//            if (wt_count <= 0) {
+//                exit(5);
+//            }
+//        }
 
-        while (TRUE) {
-            rd_count = (int) read(in_fd, buffer, BUF_SIZE);
-            if (rd_count <= 0) {
-                break;
-            }
-
-            reverse_string(buffer);
-
-            wt_count = (int) write(out_fd, buffer, rd_count);
-            if (wt_count <= 0) {
-                exit(4);
-            }
-        }
-
-        close(in_fd);
-        close(out_fd);
+//        close(in_fd);
+//        close(out_fd);
     }
+    closedir(dir);
+    free(dst_dir);
     free(src_filepath);
     free(dst_filepath);
 }
@@ -135,16 +142,8 @@ void copy_reversed_regular_files(char *src_dir, char *dst_dir) {
 int main(int argc, char *argv[]) {
     if (argc < 2) {
         printf("Too few arguments in command line!\n");
-        return -1;
+        exit(1);
     }
-
-    char *dir_name = malloc((strlen(argv[1]) + 1) * sizeof(char));
-    strcpy(dir_name, argv[1]);
-    /* Создание каталога с именем заданного каталога, прочитанного наоборот.
-     После выполнения функции в argv[1] находится путь созданной директории.*/
-    create_reversed_directory(argv[1]);
-
-    copy_reversed_regular_files(dir_name, argv[1]);
-
-    free(dir_name);
+    copy_reversed_regular_files(argv[1]);
+    return 0;
 }
