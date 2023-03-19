@@ -8,7 +8,7 @@
 #include <dirent.h>
 
 #define TRUE 1
-#define BUF_SIZE 4096
+#define BUF_SIZE 1
 #define OUTPUT_MODE 0700
 
 void reverse_string(char *str) {
@@ -70,15 +70,12 @@ void copy_reversed_regular_files(char *src_dir) {
     char *src_filepath = malloc((strlen(src_dir) + 1) * sizeof(char));
     char *dst_filepath = malloc((strlen(dst_dir) + 1) * sizeof(char));
     int rd_count, wt_count, in_fd, out_fd;
+    long offset;
+    char *text_buffer = malloc(BUF_SIZE * sizeof(char));
     /* Обходим все файлы в этой директории. */
     while ((entry = readdir(dir))) {
-        stat(entry->d_name, &st);
         /* Ссылки на родительскую и текущую директорию не копируем. */
         if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) {
-            continue;
-        }
-        /* Директории не копируем. */
-        if (S_ISDIR(st.st_mode)) {
             continue;
         }
 
@@ -89,6 +86,15 @@ void copy_reversed_regular_files(char *src_dir) {
                                (strlen(src_dir) + strlen("/") + strlen(entry->d_name) + 1) * sizeof(char));
         strcat(src_filepath, "/");
         strcat(src_filepath, entry->d_name);
+
+        if (stat(src_filepath, &st) != 0) {
+            printf("%s: Cannot get stats of directory", entry->d_name);
+            exit(2);
+        }
+        /* Директории не копируем. */
+        if (S_ISDIR(st.st_mode)) {
+            continue;
+        }
 
         /* Переворачиваем имя исходного файла. */
         reverse_string(entry->d_name); // поменять на reverse_filename
@@ -114,25 +120,23 @@ void copy_reversed_regular_files(char *src_dir) {
             exit(4);
         }
 
-//        char buffer[BUF_SIZE];
-//
-//        while (TRUE) {
-//            rd_count = (int) read(in_fd, buffer, BUF_SIZE);
-//            if (rd_count <= 0) {
-//                break;
-//            }
-//
-//            reverse_string(buffer);
-//
-//            wt_count = (int) write(out_fd, buffer, rd_count);
-//            if (wt_count <= 0) {
-//                exit(5);
-//            }
-//        }
+        offset = lseek(in_fd, 0, SEEK_END);
+        if (offset == -1) {
+            exit(10);
+        }
+        while (offset > 0) {
+            lseek(in_fd, --offset, SEEK_SET);
+            rd_count = (int) read(in_fd, text_buffer, 1);
+            wt_count = (int) write(out_fd, text_buffer, rd_count);
+            if (wt_count <= 0) {
+                exit(5);
+            }
+        }
 
-//        close(in_fd);
-//        close(out_fd);
+        close(in_fd);
+        close(out_fd);
     }
+    free(text_buffer);
     closedir(dir);
     free(dst_dir);
     free(src_filepath);

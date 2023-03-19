@@ -3,4 +3,4 @@ project(revcp C)
 
 set(CMAKE_C_STANDARD 11)
 
-add_executable(revcp copyfile.c)
+add_executable(revcp revcp.c)
