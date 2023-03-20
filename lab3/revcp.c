@@ -1,4 +1,3 @@
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -7,7 +6,6 @@
 #include <stdio.h>
 #include <dirent.h>
 
-#define TRUE 1
 #define BUF_SIZE 1
 #define OUTPUT_MODE 0700
 
@@ -39,19 +37,15 @@ void create_reversed_directory(char *str) {
 }
 
 
-void reverse_filename(char *file_path) {
-    char buf[strlen(file_path)];
-    for (int i = 0; i < strlen(file_path); i++) {
-        buf[i] = file_path[i];
+void reverse_filename(char *file_name) {
+    char *buf = malloc((strlen(file_name) + 1) * sizeof(char));
+    strcpy(buf, file_name);
+    char *name = strtok(buf, ".");
+    reverse_string(name);
+    for (int i = 0; i < strlen(name); i++) {
+        file_name[i] = name[i];
     }
-    char *name = strtok(buf, "/."); // file_path
-    reverse_string(name); // reversed file_path
-//    buf = strtok(NULL, "/."); // file extension
-//    char *new_path = "";
-//    strcat(new_path, name);
-//    strcat(new_path, "/.");
-//    strcat(new_path, buf);
-//    file_path = new_path;
+    free(buf);
 }
 
 void copy_reversed_regular_files(char *src_dir) {
@@ -78,7 +72,6 @@ void copy_reversed_regular_files(char *src_dir) {
         if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) {
             continue;
         }
-
         /* Формируем путь к файлу, из которого копируем данные. */
         strcpy(src_filepath, src_dir);
         src_filepath[strlen(src_dir)] = '\0';
@@ -97,7 +90,7 @@ void copy_reversed_regular_files(char *src_dir) {
         }
 
         /* Переворачиваем имя исходного файла. */
-        reverse_string(entry->d_name); // поменять на reverse_filename
+        reverse_filename(entry->d_name);
 
         /* Формируем путь к файлу, в который копируем данные. */
         strcpy(dst_filepath, dst_dir);
@@ -120,7 +113,7 @@ void copy_reversed_regular_files(char *src_dir) {
             exit(4);
         }
 
-        offset = lseek(in_fd, 0, SEEK_END);
+        offset = lseek(in_fd, 0, SEEK_END) - 1;
         if (offset == -1) {
             exit(10);
         }
