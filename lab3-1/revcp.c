@@ -7,7 +7,7 @@
 #include <dirent.h>
 
 #define BUF_SIZE 1
-#define OUTPUT_MODE 0700
+#define OUTPUT_MODE 00700
 
 void reverse_string(char *str) {
     size_t len = strlen(str);
@@ -113,17 +113,14 @@ void copy_reversed_regular_files(char *src_dir) {
             exit(4);
         }
 
-        offset = lseek(in_fd, 0, SEEK_END) - 1;
+        offset = lseek(in_fd, 0, SEEK_END);
         if (offset == -1) {
             exit(10);
         }
         while (offset > 0) {
             lseek(in_fd, --offset, SEEK_SET);
             rd_count = (int) read(in_fd, text_buffer, 1);
-            wt_count = (int) write(out_fd, text_buffer, rd_count);
-            if (wt_count <= 0) {
-                exit(5);
-            }
+            write(out_fd, text_buffer, rd_count);
         }
 
         close(in_fd);
