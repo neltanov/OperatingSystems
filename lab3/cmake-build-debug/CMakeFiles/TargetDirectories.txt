@@ -1,3 +1,0 @@
-/home/nelta/os/lab3/cmake-build-debug/CMakeFiles/revcp.dir
-/home/nelta/os/lab3/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/nelta/os/lab3/cmake-build-debug/CMakeFiles/rebuild_cache.dir
