@@ -141,7 +141,7 @@ void show_mod_and_nlink(char *file_path) {
 }
 
 void change_access_mode(char *file_path) {
-//    chmod(file_path,) TODO man 2 chmod
+//    chmod(file_path,)
 }
 
 int main(int argc, char *argv[]) {
