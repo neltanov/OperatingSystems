@@ -9,18 +9,19 @@
 #define OUTPUT_MODE 00700
 #define BUFFER_SIZE 4096
 #define TRUE 1
+#define NUM_OF_PERMISSIONS 9
 
 void mk_dir(char *dir_path) {
-     if (mkdir(dir_path, OUTPUT_MODE) == -1){
-        printf("mkdir: cannot create directory '%s'", dir_path);
-         return;
+    if (mkdir(dir_path, OUTPUT_MODE) == -1) {
+        printf("mkdir: cannot create directory '%s'\n", dir_path);
+        return;
     }
 }
 
 void show_files(char *dir_path) {
     DIR *dir;
     if (!(dir = opendir(dir_path))) {
-        printf("%s: No such file or directory\n", dir_path);
+        printf("show_files: cannot open directory '%s' to show files\n", dir_path);
         return;
     }
     struct dirent *entry;
@@ -31,14 +32,14 @@ void show_files(char *dir_path) {
 
 void rm_dir(char *dir_path) {
     if (remove(dir_path) == -1) {
-        printf("%s: No such directory\n", dir_path);
+        printf("rm_dir: cannot remove directory '%s'\n", dir_path);
         return;
     }
 }
 
 void create_file(char *file_path) {
     if (creat(file_path, OUTPUT_MODE) == -1) {
-        printf("%s: Can't create file\n", file_path);
+        printf("create_file: cannot create file '%s'\n", file_path);
         return;
     }
 }
@@ -46,7 +47,11 @@ void create_file(char *file_path) {
 void show_file_content(char *file_path) {
     char buffer[BUFFER_SIZE];
     int in_fd = open(file_path, O_RDONLY);
-    while(TRUE) {
+    if (in_fd < 0) {
+        printf("show_file_content: cannot open file '%s'\n", file_path);
+        return;
+    }
+    while (TRUE) {
         size_t rd_count = read(in_fd, buffer, BUFFER_SIZE);
         if (rd_count <= 0) {
             break;
@@ -57,96 +62,100 @@ void show_file_content(char *file_path) {
 
 void rm_file(char *file_path) {
     if (remove(file_path) == -1) {
-        printf("%s: No such file\n", file_path);
+        printf("rm_file: cannot remove file '%s'\n", file_path);
         return;
     }
 }
 
-void create_sym_link(char *file_path) {
-    if (symlink(strcat(file_path, "_symlink"), file_path)) {
-        printf("%s: Symbol link didn't created\n", file_path);
+void create_sym_link(char *file_path, char *sym_link_path) {
+    if (symlink(file_path, sym_link_path)) {
+        printf("create_sym_link: cannot create symbolic link '%s' to file '%s'\n", sym_link_path, file_path);
         return;
     }
 }
 
 void show_sym_link_content(char *sym_link_path) {
     char buffer[BUFFER_SIZE];
-    while(TRUE) {
-        size_t rd_count = readlink(sym_link_path, buffer, BUFFER_SIZE);
-        if (rd_count <= 0) {
-            break;
-        }
-        write(1, buffer, rd_count);
+    size_t rd_count = readlink(sym_link_path, buffer, BUFFER_SIZE);
+    if (rd_count <= 0) {
+        printf("show_sym_link_content: file '%s' doesn't link to any file\n", sym_link_path);
     }
+    write(1, buffer, rd_count);
 }
 
-void show_sym_linked_file(char *sym_link_path) {
+void show_sym_linked_file_content(char *sym_link_path) {
     char buffer[BUFFER_SIZE];
-    size_t rd_count = readlink(sym_link_path, buffer, BUFFER_SIZE);
-    write(1, buffer, rd_count);
+    size_t rd_link_count = readlink(sym_link_path, buffer, BUFFER_SIZE);
+    if (rd_link_count == -1) {
+        printf("show_sym_linked_file_content: file '%s' doesn't link to any file\n", sym_link_path);
+        return;
+    }
+    printf("show_sym_linked_file_content: file '%s' links to file '%s'\n", sym_link_path, buffer);
+    show_file_content(buffer);
 }
 
 void rm_sym_link(char *sym_link_path) {
     if (remove(sym_link_path) == -1) {
-        printf("%s: No such symbol link\n", sym_link_path);
+        printf("rm_sym_link: cannot remove symbol link '%s'\n", sym_link_path);
         return;
     }
 }
 
 void create_hard_link(char *file_path, char *hard_link_path) {
     if (link(hard_link_path, file_path)) {
-        printf("%s: Hard link didn't created\n", file_path);
+        printf("create_hard_link: cannot create hard link '%s' to file '%s'\n", hard_link_path, file_path);
         return;
     }
 }
 
 void rm_hard_link(char *hard_link_path) {
     if (remove(hard_link_path) == -1) {
-        printf("%s: No such hard link\n", hard_link_path);
+        printf("rm_hard_link: cannot remove hard link '%s'\n", hard_link_path);
         return;
     }
 }
 
 void show_mod_and_nlink(char *file_path) {
+    char access_permissions[NUM_OF_PERMISSIONS];
     struct stat st;
     if (stat(file_path, &st) == -1) {
-        printf("%s: Can't get file stats\n", file_path);
+        printf("show_mod_and_nlink: cannot get file status of file '%s'\n", file_path);
         return;
     }
-    char mod[3];
-    int readable = access(file_path, R_OK);
-    int writable = access(file_path, W_OK);
-    int executable = access(file_path, X_OK);
 
-    if (readable == 0) {
-        mod[0] = 'r';
-    } else {
-        mod[0] = '-';
-    }
+    (st.st_mode & S_IRUSR) ? (access_permissions[0] = 'r') : (access_permissions[0] = '-');
+    (st.st_mode & S_IWUSR) ? (access_permissions[1] = 'w') : (access_permissions[1] = '-');
+    (st.st_mode & S_IXUSR) ? (access_permissions[2] = 'x') : (access_permissions[2] = '-');
+    (st.st_mode & S_IRGRP) ? (access_permissions[3] = 'r') : (access_permissions[3] = '-');
+    (st.st_mode & S_IWGRP) ? (access_permissions[4] = 'w') : (access_permissions[4] = '-');
+    (st.st_mode & S_IXGRP) ? (access_permissions[5] = 'x') : (access_permissions[5] = '-');
+    (st.st_mode & S_IROTH) ? (access_permissions[6] = 'r') : (access_permissions[6] = '-');
+    (st.st_mode & S_IWOTH) ? (access_permissions[7] = 'w') : (access_permissions[7] = '-');
+    (st.st_mode & S_IXOTH) ? (access_permissions[8] = 'x') : (access_permissions[8] = '-');
 
-    if (writable == 0) {
-        mod[1] = 'w';
-    } else {
-        mod[1] = '-';
-    }
-
-    if (executable == 0) {
-        mod[2] = 'x';
-    } else {
-        mod[2] = '-';
-    }
-
-    printf("Access mode of file %s: %s\n", file_path, mod);
-    printf("Number of hard link to file %s: %lu\n", file_path, st.st_nlink);
+    printf("Access permissions of file '%s': %s\n", file_path, access_permissions);
+    printf("Number of hard link to file '%s': %lu\n", file_path, st.st_nlink);
 }
 
-void change_access_mode(char *file_path) {
-//    chmod(file_path,)
+void change_access_permissions(const char *access_permissions, char *file_path) {
+    mode_t mode = 0;
+
+    (access_permissions[0] == 'r') ? (mode |= S_IRUSR) : (mode &= ~S_IRUSR);
+    (access_permissions[1] == 'w') ? (mode |= S_IWUSR) : (mode &= ~S_IWUSR);
+    (access_permissions[2] == 'x') ? (mode |= S_IXUSR) : (mode &= ~S_IXUSR);
+    (access_permissions[3] == 'r') ? (mode |= S_IRGRP) : (mode &= ~S_IRGRP);
+    (access_permissions[4] == 'w') ? (mode |= S_IWGRP) : (mode &= ~S_IWGRP);
+    (access_permissions[5] == 'x') ? (mode |= S_IXGRP) : (mode &= ~S_IXGRP);
+    (access_permissions[6] == 'r') ? (mode |= S_IROTH) : (mode &= ~S_IROTH);
+    (access_permissions[7] == 'w') ? (mode |= S_IWOTH) : (mode &= ~S_IWOTH);
+    (access_permissions[8] == 'x') ? (mode |= S_IXOTH) : (mode &= ~S_IXOTH);
+
+    chmod(file_path, mode);
 }
 
 int main(int argc, char *argv[]) {
-    if (argc < 2) {
-        fprintf(stderr, "Invalid count of arguments!\n");
+    if (argc < 2 || argc > 3) {
+        fprintf(stderr, "%s: invalid count of arguments\n", argv[0]);
         return -1;
     }
     if (strcmp(argv[0], "./mk_dir") == 0) {
@@ -162,11 +171,11 @@ int main(int argc, char *argv[]) {
     } else if (strcmp(argv[0], "./rm_file") == 0) {
         rm_file(argv[1]);
     } else if (strcmp(argv[0], "./create_sym_link") == 0) {
-        create_sym_link(argv[1]);
+        create_sym_link(argv[1], argv[2]);
     } else if (strcmp(argv[0], "./show_sym_link_content") == 0) {
         show_sym_link_content(argv[1]);
-    } else if (strcmp(argv[0], "./show_sym_linked_file") == 0) {
-        show_sym_linked_file(argv[1]);
+    } else if (strcmp(argv[0], "./show_sym_linked_file_content") == 0) {
+        show_sym_linked_file_content(argv[1]);
     } else if (strcmp(argv[0], "./rm_sym_link") == 0) {
         rm_sym_link(argv[1]);
     } else if (strcmp(argv[0], "./create_hard_link") == 0) {
@@ -175,10 +184,10 @@ int main(int argc, char *argv[]) {
         rm_hard_link(argv[1]);
     } else if (strcmp(argv[0], "./show_mod_and_nlink") == 0) {
         show_mod_and_nlink(argv[1]);
-    } else if (strcmp(argv[0], "./change_access_mode") == 0) {
-//        change_access_mode(argv[1]);
+    } else if (strcmp(argv[0], "./change_access_permissions") == 0) {
+        change_access_permissions(argv[1], argv[2]);
     } else {
-        printf("This command doesn't exist\n");
+        printf("Command '%s' not found\n", argv[0]);
     }
     return 0;
 }
