@@ -31,10 +31,35 @@ void show_files(char *dir_path) {
 }
 
 void rm_dir(char *dir_path) {
-    if (remove(dir_path) == -1) {
-        printf("rm_dir: cannot remove directory '%s'\n", dir_path);
+    DIR *dir;
+    if (!(dir = opendir(dir_path))) {
+        printf("rm_dir: failed to remove '%s': No such file or directory\n", dir_path);
         return;
     }
+
+    struct dirent *entry;
+    struct stat st;
+    char *filepath = malloc((strlen(dir_path) + 1) * sizeof(char));
+    while ((entry = readdir(dir))) {
+        if (!strcmp(entry->d_name, ".") || !strcmp(entry->d_name, "..")) {
+            continue;
+        }
+        strcpy(filepath, dir_path);
+        filepath[strlen(dir_path)] = '\0';
+        filepath = realloc(filepath, (strlen(dir_path) + strlen("/") + strlen(entry->d_name) + 1) * sizeof(char));
+        strcat(filepath, "/");
+        strcat(filepath, entry->d_name);
+        stat(filepath, &st);
+        if (S_ISDIR(st.st_mode)) {
+            rm_dir(filepath);
+        } else {
+            remove(filepath);
+        }
+    }
+    remove(dir_path);
+
+    closedir(dir);
+    free(filepath);
 }
 
 void create_file(char *file_path) {
@@ -154,37 +179,89 @@ void change_access_permissions(const char *access_permissions, char *file_path) 
 }
 
 int main(int argc, char *argv[]) {
-    if (argc < 2 || argc > 3) {
-        fprintf(stderr, "%s: invalid count of arguments\n", argv[0]);
-        return -1;
-    }
     if (strcmp(argv[0], "./mk_dir") == 0) {
+        if (argc != 2) {
+            fprintf(stderr, "%s: invalid count of arguments\n", argv[0]);
+            return -1;
+        }
         mk_dir(argv[1]);
     } else if (strcmp(argv[0], "./show_files") == 0) {
+        if (argc != 2) {
+            fprintf(stderr, "%s: invalid count of arguments\n", argv[0]);
+            return -1;
+        }
         show_files(argv[1]);
     } else if (strcmp(argv[0], "./rm_dir") == 0) {
+        if (argc != 2) {
+            fprintf(stderr, "%s: invalid count of arguments\n", argv[0]);
+            return -1;
+        }
         rm_dir(argv[1]);
     } else if (strcmp(argv[0], "./create_file") == 0) {
+        if (argc != 2) {
+            fprintf(stderr, "%s: invalid count of arguments\n", argv[0]);
+            return -1;
+        }
         create_file(argv[1]);
     } else if (strcmp(argv[0], "./show_file_content") == 0) {
+        if (argc != 2) {
+            fprintf(stderr, "%s: invalid count of arguments\n", argv[0]);
+            return -1;
+        }
         show_file_content(argv[1]);
     } else if (strcmp(argv[0], "./rm_file") == 0) {
+        if (argc != 2) {
+            fprintf(stderr, "%s: invalid count of arguments\n", argv[0]);
+            return -1;
+        }
         rm_file(argv[1]);
     } else if (strcmp(argv[0], "./create_sym_link") == 0) {
+        if (argc != 3) {
+            fprintf(stderr, "%s: invalid count of arguments\n", argv[0]);
+            return -1;
+        }
         create_sym_link(argv[1], argv[2]);
     } else if (strcmp(argv[0], "./show_sym_link_content") == 0) {
+        if (argc != 2) {
+            fprintf(stderr, "%s: invalid count of arguments\n", argv[0]);
+            return -1;
+        }
         show_sym_link_content(argv[1]);
     } else if (strcmp(argv[0], "./show_sym_linked_file_content") == 0) {
+        if (argc != 2) {
+            fprintf(stderr, "%s: invalid count of arguments\n", argv[0]);
+            return -1;
+        }
         show_sym_linked_file_content(argv[1]);
     } else if (strcmp(argv[0], "./rm_sym_link") == 0) {
+        if (argc != 2) {
+            fprintf(stderr, "%s: invalid count of arguments\n", argv[0]);
+            return -1;
+        }
         rm_sym_link(argv[1]);
     } else if (strcmp(argv[0], "./create_hard_link") == 0) {
+        if (argc != 3) {
+            fprintf(stderr, "%s: invalid count of arguments\n", argv[0]);
+            return -1;
+        }
         create_hard_link(argv[1], argv[2]);
     } else if (strcmp(argv[0], "./rm_hard_link") == 0) {
+        if (argc != 2) {
+            fprintf(stderr, "%s: invalid count of arguments\n", argv[0]);
+            return -1;
+        }
         rm_hard_link(argv[1]);
     } else if (strcmp(argv[0], "./show_mod_and_nlink") == 0) {
+        if (argc != 2) {
+            fprintf(stderr, "%s: invalid count of arguments\n", argv[0]);
+            return -1;
+        }
         show_mod_and_nlink(argv[1]);
     } else if (strcmp(argv[0], "./change_access_permissions") == 0) {
+        if (argc != 3) {
+            fprintf(stderr, "%s: invalid count of arguments\n", argv[0]);
+            return -1;
+        }
         change_access_permissions(argv[1], argv[2]);
     } else {
         printf("Command '%s' not found\n", argv[0]);

@@ -1,5 +1,6 @@
 #!/bin/bash
 gcc main.c -o main
+rm bin/*
 ln main bin/mk_dir
 ln main bin/show_files
 ln main bin/rm_dir
