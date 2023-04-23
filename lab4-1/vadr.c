@@ -4,6 +4,7 @@
 #include <string.h>
 
 #define BUF_SIZE 100
+#define ENV_VAR_NAME "ENV_VAR"
 
 int global_init = 2;
 int global_not_init;
@@ -26,8 +27,8 @@ void work_with_buf() {
     char *buf2 = malloc(BUF_SIZE * sizeof(char));
     strcpy(buf2, "hello, world2");
     printf("%s\n", buf2);
-    free(buf2 + BUF_SIZE / 2);
-    printf("%s\n", buf2);
+//    free(buf2 + BUF_SIZE / 2);
+//    printf("%s\n", buf2);
 }
 
 void print_var_adresses() {
@@ -44,10 +45,17 @@ void print_var_adresses() {
     printf("Local in function: %p\n", init_local());
 }
 
+void work_with_env_variable() {
+    printf("%s=%s\n", ENV_VAR_NAME, getenv(ENV_VAR_NAME));
+    setenv("ENV_VAR", "another environment variable value", 1);
+    printf("%s=%s\n", ENV_VAR_NAME, getenv(ENV_VAR_NAME));
+}
+
 int main() {
     printf("Pid: %d\n", getpid());
     print_var_adresses();
     work_with_buf();
+    work_with_env_variable();
     sleep(30);
     return 0;
 }
