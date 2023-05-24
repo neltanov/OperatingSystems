@@ -36,11 +36,12 @@ int main() {
 //            exit(10);
 //        }
 
+        sleep(20);
         exit(5);
     }
 
     if (pid > 0) {
-        sleep(5);
+        sleep(3);
         printf("Local variable address in parent process: %p. Value: %d\n", &local, local);
         printf("Global variable address in parent process: %p. Value: %d\n", &global, global);
         sleep(30);
@@ -61,7 +62,6 @@ int main() {
 //        } else if (WIFCONTINUED(wstatus)) {
 //            printf("Child process continued\n");
 //        }
-
     }
 
     exit(EXIT_SUCCESS);
