@@ -6,7 +6,7 @@
 
 #define PORT 12345
 #define BUFFER_SIZE 1024
-#define BACKLOG 5
+#define BACKLOG 2
 
 int main() {
     int sockfd, new_sockfd;
@@ -43,30 +43,32 @@ int main() {
             perror("Ошибка при принятии подключения");
             exit(1);
         }
-
         printf("Подключен новый клиент\n");
 
-        while (1) {
-            ssize_t num_bytes = recv(new_sockfd, buffer, BUFFER_SIZE, 0);
-            if (num_bytes < 0) {
-                perror("Ошибка при получении данных");
-                exit(1);
+        pid_t pid = fork();
+        if (pid == 0) {
+            while (1) {
+                ssize_t num_bytes = recv(new_sockfd, buffer, BUFFER_SIZE, 0);
+                if (num_bytes < 0) {
+                    perror("Ошибка при получении данных");
+                    exit(1);
+                }
+
+                if (num_bytes == 0) {
+                    printf("Клиент отключился\n");
+                    break;
+                }
+
+                printf("Получено от клиента: %.*s\n", (int)num_bytes, buffer);
+
+                if (send(new_sockfd, buffer, num_bytes, 0) < 0) {
+                    perror("Ошибка при отправке данных");
+                    exit(1);
+                }
             }
 
-            if (num_bytes == 0) {
-                printf("Клиент отключился\n");
-                break;
-            }
-
-            printf("Получено от клиента: %.*s\n", (int)num_bytes, buffer);
-
-            if (send(new_sockfd, buffer, num_bytes, 0) < 0) {
-                perror("Ошибка при отправке данных");
-                exit(1);
-            }
+            close(new_sockfd);
         }
-
-        close(new_sockfd);
     }
 
     close(sockfd);
